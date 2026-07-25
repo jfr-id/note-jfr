@@ -588,7 +588,7 @@ function setMode(m){
   el.modeLabel.textContent=editing?"Simpan":"Ubah";
   el.modeIcon.innerHTML=editing?'<path d="M20 6L9 17l-5-5"/>'
     :'<path d="M4 20h4L18 10l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>';
-  if(editing){ el.editor.focus(); } else { renderReader(); persist(); }
+  if(editing){ el.editor.focus(); } else { renderReader(); persist(); autoPushIfNeeded(); }
 }
 
 /* ================= notes ================= */
@@ -1034,6 +1034,20 @@ async function doPush(sha){
     await persist(); ghDirty=false; renderDrawer(); closeDrawer(); toast("Terkirim ke GitHub");
   }catch(e){ toast("Gagal mengirim: "+e.message); }
 }
+let autoPushBusy=false;
+async function autoPushIfNeeded(){
+  if(!ghReady()||!ghDirty||autoPushBusy) return;
+  autoPushBusy=true;
+  try{
+    const remote=await ghGetFile(null);
+    if(remote&&gh.lastSha&&remote.sha!==gh.lastSha) return; // ada versi lain, biarkan diselesaikan manual
+    await doPush(remote?remote.sha:null);
+  }catch(e){ /* diam — akan dicoba lagi di kesempatan berikutnya */ }
+  finally{ autoPushBusy=false; }
+}
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="hidden") autoPushIfNeeded();
+});
 el.syncPull.onclick=async()=>{
   if(!ghReady()) return toast("Atur GitHub dulu");
   toast("Menarik…",4000);

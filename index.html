@@ -1,0 +1,1231 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#16181C">
+<title>Catatan</title>
+<style>
+  :root{
+    --bg:#FBFAF8; --surface:#FFFFFF; --ink:#1E2024; --muted:#6B6F76;
+    --hair:#E7E4DF; --accent:#C0392B; --accent-soft:#F6E6E3;
+    --mark:#FFE9A8; --chip:#F1EEE9;
+    --shadow:0 1px 3px rgba(0,0,0,.06),0 8px 24px rgba(0,0,0,.05);
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans CJK SC",sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,"Cascadia Mono",monospace;
+  }
+  html[data-theme="dark"]{
+    --bg:#16181C; --surface:#1E2126; --ink:#E8E9EB; --muted:#9AA0A8;
+    --hair:#2C3037; --accent:#E0564A; --accent-soft:#2A211F;
+    --mark:#5A4A1E; --chip:#282C33;
+    --shadow:0 1px 3px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+    font-size:16px;line-height:1.5;-webkit-text-size-adjust:100%;
+    -webkit-tap-highlight-color:transparent;overflow:hidden}
+  button{font-family:inherit;color:inherit;cursor:pointer;border:0;background:none}
+  input{font-family:inherit;font-size:16px}
+  .hidden{display:none!important}
+
+  .gate{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;
+    padding:24px;background:var(--bg);z-index:60}
+  .gate-card{width:100%;max-width:360px;text-align:center}
+  .seal{width:56px;height:56px;margin:0 auto 20px;border-radius:14px;display:flex;
+    align-items:center;justify-content:center;background:var(--accent-soft);color:var(--accent);font-size:26px}
+  .gate h1{font-size:20px;margin:0 0 6px;font-weight:650;letter-spacing:-.01em}
+  .gate p{font-size:13.5px;color:var(--muted);margin:0 0 22px;line-height:1.55}
+  .field{margin-bottom:12px}
+  .field input{width:100%;padding:14px 15px;border-radius:12px;border:1px solid var(--hair);
+    background:var(--surface);color:var(--ink);outline:none;transition:border-color .15s}
+  .field input:focus{border-color:var(--accent)}
+  .btn{width:100%;padding:14px;border-radius:12px;background:var(--accent);color:#fff;
+    font-weight:600;font-size:15px}
+  .btn:active{opacity:.85}
+  .linklike{display:inline-block;margin-top:16px;color:var(--muted);font-size:13px;
+    text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+  .err{color:var(--accent);font-size:13px;min-height:18px;margin:2px 0 8px}
+
+  .topbar{position:fixed;top:0;left:0;right:0;height:52px;display:flex;align-items:center;
+    gap:4px;padding:0 6px;background:var(--surface);border-bottom:1px solid var(--hair);z-index:30}
+  .icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;
+    justify-content:center;flex:0 0 auto}
+  .icon:active{background:var(--hair)}
+  .icon svg{width:20px;height:20px;stroke:currentColor;stroke-width:1.7;fill:none;
+    stroke-linecap:round;stroke-linejoin:round}
+  .title{flex:1;min-width:0;text-align:center;padding:0 2px}
+  .title button{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+    font-weight:600;font-size:16px}
+
+  .searchwrap{position:fixed;top:52px;left:0;right:0;background:var(--surface);
+    border-bottom:1px solid var(--hair);z-index:29;padding:8px 12px;display:none}
+  .searchwrap.on{display:block}
+  .searchwrap input{width:100%;padding:11px 14px;border-radius:10px;border:1px solid var(--hair);
+    background:var(--bg);color:var(--ink);outline:none}
+  .searchwrap input:focus{border-color:var(--accent)}
+  .results{position:fixed;top:105px;left:0;right:0;bottom:0;overflow:auto;background:var(--bg);z-index:28;display:none}
+  .results.on{display:block}
+  .result{padding:13px 16px;border-bottom:1px solid var(--hair);cursor:pointer}
+  .result:active{background:var(--hair)}
+  .result .rn{font-weight:600;font-size:14px;margin-bottom:3px}
+  .result .rs{font-size:13px;color:var(--muted);line-height:1.45;overflow:hidden;
+    display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 2px}
+  .noresult{padding:40px 20px;text-align:center;color:var(--muted);font-size:14px;line-height:1.6}
+
+  .stage{position:absolute;top:52px;left:0;right:0;bottom:0;display:flex;flex-direction:column}
+  .toolbar{display:flex;align-items:center;gap:2px;padding:6px 8px;border-bottom:1px solid var(--hair);
+    overflow-x:auto;scrollbar-width:none}
+  .toolbar::-webkit-scrollbar{display:none}
+  .toolbar.reading .tbtn,.toolbar.reading .tsep{opacity:.32;pointer-events:none}
+  .tbtn{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;
+    justify-content:center;font-size:15px;flex:0 0 auto}
+  .tbtn:active{background:var(--hair)}
+  .tbtn.b{font-weight:800}.tbtn.i{font-style:italic;font-family:Georgia,serif}
+  .tbtn.u{text-decoration:underline}
+  .tbtn.active{background:var(--accent-soft);color:var(--accent)}
+  .tbtn svg{width:18px;height:18px;stroke:currentColor;stroke-width:1.7;fill:none;
+    stroke-linecap:round;stroke-linejoin:round}
+  .tsep{width:1px;height:20px;background:var(--hair);margin:0 4px;flex:0 0 auto}
+  .tspacer{flex:1;min-width:8px}
+  .modebtn{padding:0 12px;height:34px;border-radius:8px;font-size:13px;font-weight:600;
+    color:var(--muted);display:flex;align-items:center;gap:6px;flex:0 0 auto}
+  .modebtn:active{background:var(--hair)}
+  .modebtn svg{width:15px;height:15px;stroke:currentColor;stroke-width:1.8;fill:none;
+    stroke-linecap:round;stroke-linejoin:round}
+  .meta{padding:10px 18px 0;font-family:var(--mono);font-size:11.5px;color:var(--muted)}
+
+  .paper{flex:1;overflow:auto;padding:16px 18px 40vh}
+  .editor,.reader{font-size:16.5px;line-height:1.65}
+  .editor{outline:none;min-height:60vh;caret-color:var(--accent)}
+  .editor:empty:before{content:attr(data-ph);color:var(--muted)}
+  .editor ol,.editor ul,.reader ol,.reader ul{padding-left:1.5em;margin:.4em 0}
+  .editor li,.reader li{margin:.15em 0}
+  .editor img,.reader img{max-width:100%;height:auto;border-radius:10px;margin:.5em 0;display:block}
+  .editor hr,.reader hr{border:0;border-top:1px solid var(--hair);margin:1.1em 0}
+  a.chip{display:inline-flex;align-items:center;gap:5px;background:var(--chip);
+    border:1px solid var(--hair);border-radius:8px;padding:2px 9px;font-size:14.5px;
+    text-decoration:none;color:var(--ink);cursor:pointer;max-width:100%;
+    vertical-align:baseline;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  a.chip .ic{font-size:13px;flex:0 0 auto}
+  a.det{color:var(--accent);text-decoration:underline;text-underline-offset:2px;
+    cursor:pointer;word-break:break-all}
+  .empty-note{color:var(--muted);font-style:italic}
+
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:40;opacity:0;
+    pointer-events:none;transition:opacity .2s}
+  .scrim.on{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;left:0;bottom:0;width:87%;max-width:340px;background:var(--surface);
+    z-index:50;transform:translateX(-100%);transition:transform .22s cubic-bezier(.4,0,.2,1);
+    display:flex;flex-direction:column;box-shadow:var(--shadow)}
+  .drawer.on{transform:translateX(0)}
+  .dhead{padding:18px 16px 12px;border-bottom:1px solid var(--hair);display:flex;
+    align-items:center;justify-content:space-between}
+  .dhead h2{font-size:15px;margin:0;font-weight:650}
+  .addnote{width:34px;height:34px;border-radius:9px;background:var(--accent-soft);
+    color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:22px;line-height:1}
+  .addnote:active{opacity:.8}
+  .dlist{flex:1;overflow:auto;padding:6px 0}
+  .ditem{display:flex;align-items:center;gap:4px;padding:11px 10px 11px 14px;cursor:pointer}
+  .ditem:active{background:var(--bg)}
+  .ditem.active{background:var(--accent-soft)}
+  .ditem .di-main{flex:1;min-width:0}
+  .ditem .di-name{font-weight:550;font-size:15px;white-space:nowrap;overflow:hidden;
+    text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+  .ditem.active .di-name{color:var(--accent)}
+  .ditem .di-time{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:2px}
+  .minibtn{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;
+    justify-content:center;color:var(--muted);font-size:14px;flex:0 0 auto}
+  .minibtn:active{background:var(--hair);color:var(--accent)}
+  .minibtn.pinned{color:var(--accent)}
+  .dfoot{border-top:1px solid var(--hair);padding:6px;max-height:46vh;overflow:auto}
+  .drow{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:9px;
+    font-size:14px;text-align:left}
+  .drow:active{background:var(--bg)}
+  .drow svg{width:17px;height:17px;stroke:currentColor;stroke-width:1.7;fill:none;
+    stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+  .drow .sub{margin-left:auto;font-size:12px;color:var(--muted);flex:0 0 auto}
+  .switch{margin-left:auto;width:40px;height:23px;border-radius:12px;background:var(--hair);
+    position:relative;transition:background .18s;flex:0 0 auto}
+  .switch.on{background:var(--accent)}
+  .switch:after{content:"";position:absolute;top:2px;left:2px;width:19px;height:19px;
+    border-radius:50%;background:#fff;transition:transform .18s;box-shadow:0 1px 2px rgba(0,0,0,.2)}
+  .switch.on:after{transform:translateX(17px)}
+  .dgroup{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+    padding:12px 12px 4px;font-weight:600}
+
+  .modal-scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:70;display:none;
+    align-items:center;justify-content:center;padding:20px}
+  .modal-scrim.on{display:flex}
+  .modal{width:100%;max-width:380px;max-height:80vh;overflow:auto;background:var(--surface);
+    border-radius:16px;padding:20px;box-shadow:var(--shadow)}
+  .modal h3{margin:0 0 6px;font-size:16.5px;font-weight:650}
+  .modal p{margin:0 0 16px;font-size:13.5px;color:var(--muted);line-height:1.55}
+  .modal input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--hair);
+    background:var(--bg);color:var(--ink);outline:none;margin-bottom:10px}
+  .modal input:focus{border-color:var(--accent)}
+  .modal label{display:block;font-size:12px;color:var(--muted);margin:0 0 5px 2px;font-weight:600}
+  .modal .row{display:flex;gap:10px;margin-top:8px}
+  .modal .row button{flex:1;padding:12px;border-radius:10px;font-weight:600;font-size:14.5px}
+  .mcancel{background:var(--hair)}
+  .mok{background:var(--ink);color:var(--bg)}
+  .mok.danger{background:var(--accent);color:#fff}
+  .merr{color:var(--accent);font-size:12.5px;min-height:16px;margin:-4px 0 6px}
+  .listbox{border:1px solid var(--hair);border-radius:10px;overflow:hidden;margin-bottom:10px}
+  .listrow{display:flex;align-items:center;gap:8px;padding:11px 12px;font-size:14px}
+  .listrow+.listrow{border-top:1px solid var(--hair)}
+  .listrow .lr-main{flex:1;min-width:0}
+  .listrow .lr-name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:550}
+  .listrow .lr-sub{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:2px}
+  .listrow button{font-size:12.5px;padding:6px 10px;border-radius:7px;background:var(--hair);flex:0 0 auto}
+
+  .pop{position:fixed;z-index:80;background:var(--surface);border:1px solid var(--hair);
+    border-radius:11px;box-shadow:var(--shadow);display:none;overflow:hidden;min-width:130px}
+  .pop.on{display:block}
+  .pop button{display:block;width:100%;text-align:left;padding:11px 18px;font-size:14px;white-space:nowrap}
+  .pop button:active{background:var(--bg)}
+  .pop button+button{border-top:1px solid var(--hair)}
+
+  .toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:20px;font-size:13.5px;
+    font-weight:500;z-index:90;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+    max-width:88vw;text-align:center}
+  .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  @media (min-width:760px){
+    .drawer{max-width:310px}
+    .paper,.meta{padding-left:max(18px,calc(50% - 380px));padding-right:max(18px,calc(50% - 380px))}
+  }
+  @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<div class="gate" id="gate">
+  <div class="gate-card">
+    <div class="seal">🔒</div>
+    <h1 id="gateTitle">Buat kata sandi</h1>
+    <p id="gateDesc"></p>
+    <div class="err" id="gateErr"></div>
+    <div class="field"><input type="password" id="gatePw" placeholder="Kata sandi" autocomplete="off"></div>
+    <div class="field hidden" id="gatePw2wrap"><input type="password" id="gatePw2" placeholder="Ulangi kata sandi" autocomplete="off"></div>
+    <button class="btn" id="gateBtn">Kunci &amp; mulai</button>
+    <div><span class="linklike hidden" id="skipPw">Lewati — pakai tanpa sandi</span></div>
+  </div>
+</div>
+
+<div class="topbar hidden" id="topbar">
+  <button class="icon" id="menuBtn" aria-label="Menu">
+    <svg viewBox="0 0 24 24"><line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="20" y2="17"/></svg>
+  </button>
+  <div class="title"><button id="titleBtn">Catatan</button></div>
+  <button class="icon" id="lockNowBtn" aria-label="Kunci sekarang">
+    <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+  </button>
+  <button class="icon" id="searchBtn" aria-label="Cari">
+    <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.5" y2="16.5"/></svg>
+  </button>
+</div>
+
+<div class="searchwrap" id="searchwrap">
+  <input type="search" id="searchInput" placeholder="Cari di semua catatan…" autocomplete="off">
+</div>
+<div class="results" id="results"></div>
+
+<div class="stage hidden" id="stage">
+  <div class="toolbar" id="toolbar">
+    <button class="tbtn b" data-cmd="bold" aria-label="Tebal">B</button>
+    <button class="tbtn i" data-cmd="italic" aria-label="Miring">I</button>
+    <button class="tbtn u" data-cmd="underline" aria-label="Garis bawah">U</button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-cmd="insertOrderedList" aria-label="Daftar bernomor">1.</button>
+    <button class="tbtn" data-cmd="insertUnorderedList" aria-label="Daftar poin">•</button>
+    <div class="tsep"></div>
+    <button class="tbtn" id="imgBtn" aria-label="Sisip gambar">
+      <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="8.5" cy="10" r="1.5"/><path d="M21 16l-5-5-4.5 4.5L9 13l-6 6"/></svg>
+    </button>
+    <button class="tbtn" id="linkBtn" aria-label="Sisip tautan">
+      <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7 0l2-2a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-2 2a5 5 0 0 0 7 7l1-1"/></svg>
+    </button>
+    <button class="tbtn" id="hrBtn" aria-label="Garis pemisah">
+      <svg viewBox="0 0 24 24"><line x1="4" y1="12" x2="20" y2="12"/></svg>
+    </button>
+    <div class="tsep"></div>
+    <button class="tbtn" data-cmd="undo" aria-label="Urungkan">↶</button>
+    <button class="tbtn" data-cmd="redo" aria-label="Ulangi">↷</button>
+    <div class="tspacer"></div>
+    <button class="modebtn" id="modeBtn">
+      <svg id="modeIcon" viewBox="0 0 24 24"><path d="M4 20h4L18 10l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/></svg>
+      <span id="modeLabel">Ubah</span>
+    </button>
+  </div>
+  <div class="meta" id="meta"></div>
+  <div class="paper" id="paper">
+    <div class="editor hidden" id="editor" contenteditable="true" data-ph="Tulis di sini…" spellcheck="false"></div>
+    <div class="reader" id="reader"></div>
+  </div>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="drawer">
+  <div class="dhead">
+    <h2>Catatan</h2>
+    <button class="addnote" id="addNote" aria-label="Tambah catatan">+</button>
+  </div>
+  <div class="dlist" id="dlist"></div>
+  <div class="dfoot">
+    <div class="dgroup">Sinkron</div>
+    <button class="drow" id="syncPush">
+      <svg viewBox="0 0 24 24"><path d="M12 20V8"/><path d="M8 12l4-4 4 4"/><path d="M4 4h16"/></svg>
+      Kirim ke GitHub <span class="sub" id="pushSub"></span>
+    </button>
+    <button class="drow" id="syncPull">
+      <svg viewBox="0 0 24 24"><path d="M12 4v12"/><path d="M8 12l4 4 4-4"/><path d="M4 20h16"/></svg>
+      Tarik dari GitHub
+    </button>
+    <button class="drow" id="syncHistory">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+      Riwayat versi
+    </button>
+    <button class="drow" id="syncSetup">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6l1.4 1.4M17 17l1.4 1.4M18.4 5.6L17 7M7 17l-1.4 1.4"/></svg>
+      Atur GitHub <span class="sub" id="setupSub"></span>
+    </button>
+
+    <div class="dgroup">Keamanan</div>
+    <button class="drow" id="lockToggleRow">
+      <svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg>
+      Kunci dengan sandi <span class="switch" id="lockSwitch"></span>
+    </button>
+    <button class="drow" id="idleRow">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+      Kunci otomatis <span class="sub" id="idleSub"></span>
+    </button>
+    <button class="drow" id="changePw">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.2"/><path d="M6 20a6 6 0 0 1 12 0"/></svg>
+      Ganti kata sandi
+    </button>
+
+    <div class="dgroup">Lainnya</div>
+    <button class="drow" id="trashRow">
+      <svg viewBox="0 0 24 24"><path d="M4 7h16"/><path d="M9 7V5h6v2"/><path d="M6 7l1 13h10l1-13"/></svg>
+      Tempat sampah <span class="sub" id="trashSub"></span>
+    </button>
+    <button class="drow" id="exportBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 3v12"/><path d="M8 11l4 4 4-4"/><path d="M4 21h16"/></svg>
+      Ekspor cadangan <span class="sub" id="exportSub"></span>
+    </button>
+    <button class="drow" id="importBtn">
+      <svg viewBox="0 0 24 24"><path d="M12 21V9"/><path d="M8 13l4-4 4 4"/><path d="M4 3h16"/></svg>
+      Impor cadangan
+    </button>
+    <button class="drow" id="themeRow">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M19.1 4.9l-1.4 1.4M6.3 17.7l-1.4 1.4"/></svg>
+      Tema <span class="sub" id="themeSub"></span>
+    </button>
+  </div>
+</aside>
+
+<input type="file" id="fileInput" accept=".json,application/json" class="hidden">
+<input type="file" id="imgInput" accept="image/*" class="hidden">
+
+<div class="modal-scrim" id="modalScrim"><div class="modal" id="modal"></div></div>
+<div class="pop" id="pop"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+/* ================= storage: IndexedDB with fallback ================= */
+const Store = (()=>{
+  let db=null, ok=false;
+  const mem={};
+  function open(){
+    return new Promise(res=>{
+      if(!("indexedDB" in window)) return res(false);
+      let req;
+      try{ req=indexedDB.open("catatan-db",1); }catch(e){ return res(false); }
+      req.onupgradeneeded=()=>{ try{ req.result.createObjectStore("kv"); }catch(e){} };
+      req.onsuccess=()=>{ db=req.result; ok=true; res(true); };
+      req.onerror=()=>res(false);
+      setTimeout(()=>{ if(!ok) res(false); },3000);
+    });
+  }
+  function tx(mode){ return db.transaction("kv",mode).objectStore("kv"); }
+  return {
+    async init(){ ok=await open(); return ok; },
+    get(k){
+      if(!ok) return Promise.resolve(k in mem?mem[k]:lsGet(k));
+      return new Promise(res=>{ try{ const r=tx("readonly").get(k);
+        r.onsuccess=()=>res(r.result===undefined?null:r.result); r.onerror=()=>res(null);
+      }catch(e){ res(null); } });
+    },
+    set(k,v){
+      if(!ok){ mem[k]=v; lsSet(k,v); return Promise.resolve(); }
+      return new Promise(res=>{ try{ const r=tx("readwrite").put(v,k);
+        r.onsuccess=()=>res(); r.onerror=()=>res();
+      }catch(e){ res(); } });
+    },
+    del(k){
+      if(!ok){ delete mem[k]; lsDel(k); return Promise.resolve(); }
+      return new Promise(res=>{ try{ const r=tx("readwrite").delete(k);
+        r.onsuccess=()=>res(); r.onerror=()=>res();
+      }catch(e){ res(); } });
+    },
+    get usable(){ return ok; }
+  };
+  function lsGet(k){ try{ return localStorage.getItem("cat."+k); }catch(e){ return null; } }
+  function lsSet(k,v){ try{ localStorage.setItem("cat."+k,v); }catch(e){} }
+  function lsDel(k){ try{ localStorage.removeItem("cat."+k); }catch(e){} }
+})();
+
+/* ================= crypto ================= */
+const ENC=new TextEncoder(), DEC=new TextDecoder();
+function b64e(buf){ const b=new Uint8Array(buf); let s=""; const CH=0x8000;
+  for(let i=0;i<b.length;i+=CH) s+=String.fromCharCode.apply(null,b.subarray(i,i+CH));
+  return btoa(s); }
+function b64d(str){ const s=atob(str.replace(/\s/g,"")); const b=new Uint8Array(s.length);
+  for(let i=0;i<s.length;i++) b[i]=s.charCodeAt(i); return b; }
+function strToB64(str){ return b64e(ENC.encode(str)); }
+function b64ToStr(b64){ return DEC.decode(b64d(b64)); }
+async function deriveKey(pw,salt){
+  const base=await crypto.subtle.importKey("raw",ENC.encode(pw),"PBKDF2",false,["deriveKey"]);
+  return crypto.subtle.deriveKey({name:"PBKDF2",salt,iterations:150000,hash:"SHA-256"},
+    base,{name:"AES-GCM",length:256},false,["encrypt","decrypt"]);
+}
+async function encryptObj(key,obj){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const ct=await crypto.subtle.encrypt({name:"AES-GCM",iv},key,ENC.encode(JSON.stringify(obj)));
+  return b64e(iv)+"."+b64e(ct);
+}
+async function decryptObj(key,blob){
+  const [ivB,ctB]=blob.split(".");
+  const pt=await crypto.subtle.decrypt({name:"AES-GCM",iv:b64d(ivB)},key,b64d(ctB));
+  return JSON.parse(DEC.decode(pt));
+}
+
+/* ================= state ================= */
+let notes=[];            // {id,name,html,created,modified,pinned,deleted}
+let curId=null;
+let gh={repo:"",path:"catatan.json",token:"",lastSha:null,lastSync:null};
+let cryptoKey=null, saltBytes=null, locked=true;
+let mode="read", saveTimer=null, idleMin=5, lastActivity=Date.now();
+
+const $=s=>document.querySelector(s);
+const el={};
+["gate","gateTitle","gateDesc","gateErr","gatePw","gatePw2wrap","gatePw2","gateBtn","skipPw",
+ "topbar","stage","menuBtn","titleBtn","searchBtn","lockNowBtn","searchwrap","searchInput","results",
+ "toolbar","meta","paper","editor","reader","modeBtn","modeLabel","modeIcon",
+ "scrim","drawer","dlist","addNote","imgBtn","linkBtn","hrBtn",
+ "syncPush","syncPull","syncHistory","syncSetup","pushSub","setupSub",
+ "lockToggleRow","lockSwitch","idleRow","idleSub","changePw",
+ "trashRow","trashSub","exportBtn","exportSub","importBtn","themeRow","themeSub",
+ "fileInput","imgInput","modalScrim","modal","pop","toast"].forEach(id=>el[id]=$("#"+id));
+
+/* ================= util ================= */
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function toast(msg,ms){ el.toast.textContent=msg; el.toast.classList.add("on");
+  clearTimeout(toast._t); toast._t=setTimeout(()=>el.toast.classList.remove("on"),ms||1800); }
+function pad(n){ return String(n).padStart(2,"0"); }
+function fmtTime(ts){ if(!ts) return "—"; const d=new Date(ts), now=new Date();
+  if(d.toDateString()===now.toDateString()) return `hari ini ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; }
+const noteById=id=>notes.find(n=>n.id===id);
+const liveNotes=()=>notes.filter(n=>!n.deleted);
+const trashNotes=()=>notes.filter(n=>n.deleted);
+function stripHtml(html){ const t=document.createElement("div"); t.innerHTML=html||"";
+  t.querySelectorAll("img").forEach(i=>i.replaceWith("[gambar]"));
+  return t.textContent||""; }
+function escapeHtml(s){ return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* ================= persistence ================= */
+async function persist(){
+  const data={notes,curId,gh};
+  if(locked&&cryptoKey){
+    await Store.set("blob",await encryptObj(cryptoKey,data));
+    await Store.set("salt",b64e(saltBytes));
+    await Store.del("plain"); await Store.set("lock","1");
+  }else{
+    await Store.set("plain",JSON.stringify(data));
+    await Store.del("blob"); await Store.del("salt"); await Store.set("lock","0");
+  }
+}
+function scheduleSave(){ clearTimeout(saveTimer); saveTimer=setTimeout(persist,400); }
+
+/* ================= link chips ================= */
+const SITES=[
+  [/(^|\.)drive\.google\.com$/,"📁","Google Drive"],
+  [/(^|\.)docs\.google\.com$/,"📄","Google Docs"],
+  [/(^|\.)sheets\.google\.com$/,"📊","Google Sheets"],
+  [/(^|\.)mail\.google\.com$/,"✉️","Gmail"],
+  [/(^|\.)youtube\.com$|^youtu\.be$/,"▶️","YouTube"],
+  [/(^|\.)github\.com$/,"🐙","GitHub"],
+  [/(^|\.)t\.me$|(^|\.)telegram\.org$/,"✈️","Telegram"],
+  [/(^|\.)wa\.me$|(^|\.)whatsapp\.com$/,"💬","WhatsApp"],
+  [/(^|\.)maps\.google\.com$|(^|\.)goo\.gl$/,"📍","Maps"],
+  [/(^|\.)notion\.so$/,"📓","Notion"],
+  [/(^|\.)dropbox\.com$/,"📦","Dropbox"]
+];
+function siteInfo(url){
+  let host="";
+  try{ host=new URL(url).hostname.replace(/^www\./,""); }catch(e){ host=""; }
+  for(const [re,ic,name] of SITES) if(re.test(host)) return {ic,name};
+  return {ic:"🔗",name:host||"tautan"};
+}
+function chipHtml(url,label){
+  const {ic,name}=siteInfo(url);
+  const text=label||name;
+  return `<a class="chip" contenteditable="false" data-type="url" data-val="${encodeURIComponent(url)}"`+
+         `><span class="ic">${ic}</span>${escapeHtml(text)}</a>`;
+}
+
+/* ================= auto-detect in reader ================= */
+const RE_URL=/\b((?:https?:\/\/|www\.)[^\s<]+[^\s<.,;:!?)])/gi;
+const RE_MAIL=/\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g;
+const RE_NUM=/(^|[^\w+])(\+?\d[\d\s().-]{4,}\d)(?![\w])/g;
+function classifyNumber(raw){
+  const s=raw.trim();
+  if(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(s)) return null;   // tanggal 2024-05-12
+  if(/^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/.test(s)) return null;  // tanggal 12/05/2024
+  if(/^\d{1,3}([.,]\d{3})+$/.test(s)) return null;            // uang 1.250.000
+  const digits=s.replace(/\D/g,"");
+  if(digits.length<6) return null;
+  const grouped=/[\s().-]/.test(s);
+  if(s.startsWith("+")&&digits.length>=8&&digits.length<=15) return "phone";
+  if(grouped&&digits.length>=8&&digits.length<=15) return "phone";
+  if(/^0\d{8,14}$/.test(digits)) return "phone";              // 08123456789
+  return "number";                                            // NIM, kode, dll
+}
+function linkifyText(text){
+  let out=escapeHtml(text);
+  const holds=[]; const hold=h=>{ holds.push(h); return `\u0000${holds.length-1}\u0000`; };
+  out=out.replace(RE_URL,m=>{
+    const href=m.startsWith("http")?m:"https://"+m;
+    return hold(chipHtml(href,null));
+  });
+  out=out.replace(RE_MAIL,m=>hold(`<a class="det" data-type="email" data-val="${encodeURIComponent(m)}">${m}</a>`));
+  out=out.replace(RE_NUM,(m,pre,num)=>{
+    const kind=classifyNumber(num);
+    if(!kind) return m;
+    return pre+hold(`<a class="det" data-type="${kind}" data-val="${encodeURIComponent(num.trim())}">${num}</a>`);
+  });
+  return out.replace(/\u0000(\d+)\u0000/g,(_,i)=>holds[+i]);
+}
+function linkifyHtml(html){
+  const tmp=document.createElement("div"); tmp.innerHTML=html||"";
+  (function walk(node){
+    for(const child of [...node.childNodes]){
+      if(child.nodeType===3){
+        const rep=linkifyText(child.nodeValue);
+        if(rep!==escapeHtml(child.nodeValue)){
+          const span=document.createElement("span"); span.innerHTML=rep;
+          child.replaceWith(...span.childNodes);
+        }
+      }else if(child.nodeType===1 && child.tagName!=="A"){ walk(child); }
+    }
+  })(tmp);
+  return tmp.innerHTML;
+}
+
+/* ================= render ================= */
+function sortedNotes(){
+  return liveNotes().sort((a,b)=>{
+    if(!!b.pinned-!!a.pinned) return (b.pinned?1:0)-(a.pinned?1:0);
+    return b.modified-a.modified;
+  });
+}
+function renderDrawer(){
+  const list=sortedNotes();
+  el.dlist.innerHTML="";
+  if(!list.length){ el.dlist.innerHTML='<div class="noresult">Belum ada catatan.<br>Ketuk + untuk membuat.</div>'; }
+  list.forEach(n=>{
+    const row=document.createElement("div");
+    row.className="ditem"+(n.id===curId?" active":"");
+    row.innerHTML=`<div class="di-main"><div class="di-name"></div>
+      <div class="di-time">${fmtTime(n.modified)}</div></div>
+      <button class="minibtn${n.pinned?" pinned":""}" data-a="pin" aria-label="Sematkan">${n.pinned?"📌":"📍"}</button>
+      <button class="minibtn" data-a="del" aria-label="Hapus">✕</button>`;
+    const nameEl=row.querySelector(".di-name");
+    nameEl.textContent=n.name;
+    row.querySelector(".di-main").onclick=()=>{ openNote(n.id); closeDrawer(); };
+    row.querySelector('[data-a="pin"]').onclick=e=>{ e.stopPropagation();
+      n.pinned=!n.pinned; persist(); renderDrawer(); toast(n.pinned?"Disematkan":"Lepas sematan"); };
+    row.querySelector('[data-a="del"]').onclick=e=>{ e.stopPropagation(); confirmDelete(n.id); };
+    el.dlist.appendChild(row);
+  });
+  el.exportSub.textContent=locked?"terenkripsi":"polos";
+  el.lockSwitch.classList.toggle("on",locked);
+  el.changePw.style.display=locked?"":"none";
+  el.idleRow.style.display=locked?"":"none";
+  el.idleSub.textContent=idleMin?idleMin+" mnt":"mati";
+  el.trashSub.textContent=trashNotes().length?trashNotes().length+" item":"kosong";
+  el.setupSub.textContent=gh.repo?"tersambung":"belum";
+  el.pushSub.textContent=gh.lastSync?fmtTime(gh.lastSync):"";
+  el.themeSub.textContent=document.documentElement.getAttribute("data-theme")==="dark"?"gelap":"terang";
+}
+function renderMeta(){ const n=noteById(curId); el.meta.textContent=n?"Terakhir diubah "+fmtTime(n.modified):""; }
+function setTitle(){ const n=noteById(curId); el.titleBtn.textContent=n?n.name:"Catatan"; }
+function renderReader(){
+  const n=noteById(curId);
+  if(!n){ el.reader.innerHTML=""; return; }
+  const txt=stripHtml(n.html).trim();
+  const hasMedia=/<(img|hr)/i.test(n.html||"");
+  if(!txt&&!hasMedia){ el.reader.innerHTML='<div class="empty-note">Catatan kosong. Ketuk “Ubah” untuk menulis.</div>'; return; }
+  el.reader.innerHTML=linkifyHtml(n.html);
+}
+
+/* ================= mode ================= */
+function setMode(m){
+  mode=m;
+  const editing=m==="edit";
+  el.editor.classList.toggle("hidden",!editing);
+  el.reader.classList.toggle("hidden",editing);
+  el.toolbar.classList.toggle("reading",!editing);
+  el.modeLabel.textContent=editing?"Simpan":"Ubah";
+  el.modeIcon.innerHTML=editing?'<path d="M20 6L9 17l-5-5"/>'
+    :'<path d="M4 20h4L18 10l-4-4L4 16v4z"/><path d="M13.5 6.5l4 4"/>';
+  if(editing){ el.editor.focus(); } else { renderReader(); persist(); }
+}
+
+/* ================= notes ================= */
+function openNote(id){
+  if(mode==="edit") commitEditor();
+  curId=id;
+  const n=noteById(id);
+  el.editor.innerHTML=n?n.html:"";
+  setTitle(); renderMeta(); setMode("read");
+}
+function commitEditor(){ const n=noteById(curId); if(!n) return;
+  const html=el.editor.innerHTML;
+  if(html!==n.html){ n.html=html; n.modified=Date.now(); } }
+function touchAndSave(){ const n=noteById(curId); if(!n) return;
+  n.html=el.editor.innerHTML; n.modified=Date.now(); renderMeta(); scheduleSave(); }
+function newNote(name){
+  const n={id:uid(),name:name||"Tanpa judul",html:"",created:Date.now(),modified:Date.now(),pinned:false,deleted:null};
+  notes.push(n); curId=n.id; el.editor.innerHTML=""; setTitle(); renderMeta();
+  persist(); renderDrawer(); setMode("edit");
+}
+function confirmDelete(id){
+  const n=noteById(id); if(!n) return;
+  showModal({title:"Pindahkan ke sampah?",
+    desc:`“${n.name}” masuk tempat sampah dan dihapus permanen setelah 30 hari.`,
+    okText:"Pindahkan", danger:true,
+    onOk:()=>{ n.deleted=Date.now();
+      if(curId===id){ const rest=sortedNotes(); curId=rest.length?rest[0].id:null;
+        if(curId) openNote(curId); else { el.editor.innerHTML=""; el.reader.innerHTML=""; setTitle(); renderMeta(); } }
+      persist(); renderDrawer(); closeModal(); toast("Dipindahkan ke sampah"); }});
+}
+function purgeOldTrash(){
+  const cut=Date.now()-30*864e5; const before=notes.length;
+  notes=notes.filter(n=>!(n.deleted&&n.deleted<cut));
+  return before!==notes.length;
+}
+
+/* ================= drawer ================= */
+function openDrawer(){ renderDrawer(); el.scrim.classList.add("on"); el.drawer.classList.add("on"); }
+function closeDrawer(){ el.scrim.classList.remove("on"); el.drawer.classList.remove("on"); }
+el.menuBtn.onclick=openDrawer;
+el.scrim.onclick=closeDrawer;
+el.addNote.onclick=()=>showModal({title:"Catatan baru",inputPh:"Nama catatan",okText:"Buat",
+  onOk:v=>{ if(!v.trim()) return "Beri nama dulu."; closeModal(); closeDrawer(); newNote(v.trim()); }});
+el.titleBtn.onclick=()=>{ const n=noteById(curId); if(!n) return;
+  showModal({title:"Ganti nama",inputPh:"Nama catatan",inputVal:n.name,okText:"Simpan",
+    onOk:v=>{ if(!v.trim()) return "Nama tidak boleh kosong."; n.name=v.trim(); n.modified=Date.now();
+      setTitle(); renderDrawer(); persist(); closeModal(); }}); };
+
+/* ================= toolbar ================= */
+el.toolbar.querySelectorAll(".tbtn[data-cmd]").forEach(b=>{
+  b.addEventListener("mousedown",e=>e.preventDefault());
+  b.onclick=()=>{ if(mode!=="edit") return;
+    document.execCommand(b.dataset.cmd,false,null);
+    el.editor.focus(); updateToolbarState(); touchAndSave(); };
+});
+function updateToolbarState(){
+  ["bold","italic","underline"].forEach(cmd=>{
+    const btn=el.toolbar.querySelector(`[data-cmd="${cmd}"]`);
+    try{ btn.classList.toggle("active",document.queryCommandState(cmd)); }catch(e){}
+  });
+}
+document.addEventListener("selectionchange",()=>{ if(mode==="edit") updateToolbarState(); });
+
+el.hrBtn.addEventListener("mousedown",e=>e.preventDefault());
+el.hrBtn.onclick=()=>{ if(mode!=="edit") return;
+  document.execCommand("insertHTML",false,"<hr><p><br></p>"); el.editor.focus(); touchAndSave(); };
+
+el.linkBtn.addEventListener("mousedown",e=>e.preventDefault());
+el.linkBtn.onclick=()=>{ if(mode!=="edit") return;
+  showModal({title:"Sisip tautan",desc:"Tempel tautan panjang — akan tampil ringkas.",
+    fields:[{key:"url",label:"Tautan",ph:"https://…"},{key:"label",label:"Nama (opsional)",ph:"mis. Berkas Visa"}],
+    okText:"Sisipkan",
+    onOkFields:v=>{
+      let url=(v.url||"").trim(); if(!url) return "Tautan tidak boleh kosong.";
+      if(!/^https?:\/\//i.test(url)) url="https://"+url;
+      try{ new URL(url); }catch(e){ return "Tautan tidak valid."; }
+      closeModal(); el.editor.focus();
+      document.execCommand("insertHTML",false,chipHtml(url,(v.label||"").trim()||null)+"&nbsp;");
+      touchAndSave();
+    }});
+};
+
+el.imgBtn.addEventListener("mousedown",e=>e.preventDefault());
+el.imgBtn.onclick=()=>{ if(mode!=="edit") return; el.imgInput.click(); };
+el.imgInput.onchange=async()=>{
+  const f=el.imgInput.files[0]; el.imgInput.value="";
+  if(!f) return;
+  toast("Memproses gambar…");
+  try{
+    const dataUrl=await compressImage(f);
+    el.editor.focus();
+    document.execCommand("insertHTML",false,`<img src="${dataUrl}"><p><br></p>`);
+    touchAndSave();
+    toast("Gambar disisipkan");
+  }catch(e){ toast("Gagal memuat gambar"); }
+};
+function compressImage(file){
+  return new Promise((res,rej)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{
+      const img=new Image();
+      img.onload=()=>{
+        const MAX=1024;
+        let {width:w,height:h}=img;
+        if(w>MAX||h>MAX){ const r=Math.min(MAX/w,MAX/h); w=Math.round(w*r); h=Math.round(h*r); }
+        const c=document.createElement("canvas"); c.width=w; c.height=h;
+        const ctx=c.getContext("2d");
+        ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h);
+        ctx.drawImage(img,0,0,w,h);
+        const isPng=/png|webp/i.test(file.type);
+        let out=isPng?c.toDataURL("image/png"):c.toDataURL("image/jpeg",0.78);
+        if(out.length>420000){ out=c.toDataURL("image/jpeg",0.7); }
+        if(out.length>420000){ out=c.toDataURL("image/jpeg",0.55); }
+        res(out);
+      };
+      img.onerror=rej; img.src=fr.result;
+    };
+    fr.onerror=rej; fr.readAsDataURL(file);
+  });
+}
+
+/* smart lists */
+el.editor.addEventListener("keydown",e=>{
+  if(e.key!==" ") return;
+  const sel=window.getSelection(); if(!sel.rangeCount) return;
+  const r=sel.getRangeAt(0); const node=r.startContainer;
+  if(node.nodeType!==3) return;
+  const txt=node.nodeValue.slice(0,r.startOffset);
+  if(/^\s*1[.)]$/.test(txt)){
+    e.preventDefault(); node.nodeValue=node.nodeValue.slice(r.startOffset);
+    document.execCommand("insertOrderedList"); touchAndSave();
+  }else if(/^\s*[-*]$/.test(txt)){
+    e.preventDefault(); node.nodeValue=node.nodeValue.slice(r.startOffset);
+    document.execCommand("insertUnorderedList"); touchAndSave();
+  }
+});
+el.editor.addEventListener("input",touchAndSave);
+el.editor.addEventListener("paste",e=>{
+  const items=e.clipboardData&&e.clipboardData.items;
+  if(items) for(const it of items){
+    if(it.type&&it.type.startsWith("image/")){
+      e.preventDefault(); const f=it.getAsFile();
+      compressImage(f).then(d=>{ document.execCommand("insertHTML",false,`<img src="${d}"><p><br></p>`); touchAndSave(); });
+      return;
+    }
+  }
+  e.preventDefault();
+  const text=(e.clipboardData||window.clipboardData).getData("text/plain");
+  document.execCommand("insertText",false,text);
+});
+el.modeBtn.onclick=()=>{ if(mode==="read") setMode("edit"); else { commitEditor(); setMode("read"); } };
+
+/* ================= search ================= */
+let searchOn=false;
+function closeSearch(){ searchOn=false; el.searchwrap.classList.remove("on"); el.results.classList.remove("on"); }
+el.searchBtn.onclick=()=>{ searchOn=!searchOn; el.searchwrap.classList.toggle("on",searchOn);
+  if(searchOn){ el.searchInput.value=""; el.searchInput.focus(); el.results.classList.remove("on"); el.results.innerHTML=""; }
+  else el.results.classList.remove("on"); };
+document.addEventListener("pointerdown",e=>{
+  if(!searchOn) return;
+  if(el.searchwrap.contains(e.target)||el.results.contains(e.target)||e.target.closest("#searchBtn")) return;
+  closeSearch();
+});
+el.searchInput.addEventListener("input",()=>{
+  const q=el.searchInput.value.trim().toLowerCase();
+  if(!q){ el.results.classList.remove("on"); el.results.innerHTML=""; return; }
+  const hits=[];
+  liveNotes().forEach(n=>{
+    const plain=stripHtml(n.html);
+    if((n.name+"\n"+plain).toLowerCase().includes(q)){
+      const pi=plain.toLowerCase().indexOf(q);
+      let snip;
+      if(pi>=0){ const s=Math.max(0,pi-24); snip=(s>0?"…":"")+plain.slice(s,pi+q.length+40)+"…"; }
+      else snip=plain.slice(0,60)||"(judul cocok)";
+      hits.push({n,snip});
+    }
+  });
+  hits.sort((a,b)=>b.n.modified-a.n.modified);
+  el.results.classList.add("on");
+  if(!hits.length){ el.results.innerHTML='<div class="noresult">Tidak ditemukan.</div>'; return; }
+  el.results.innerHTML="";
+  hits.forEach(h=>{
+    const d=document.createElement("div"); d.className="result";
+    const rn=document.createElement("div"); rn.className="rn"; rn.textContent=h.n.name;
+    const rs=document.createElement("div"); rs.className="rs"; rs.innerHTML=highlight(h.snip,q);
+    d.append(rn,rs); d.onclick=()=>jumpTo(h.n.id,q); el.results.appendChild(d);
+  });
+});
+function highlight(text,q){
+  const low=text.toLowerCase(), ql=q.toLowerCase();
+  let out="",i=0,idx;
+  while((idx=low.indexOf(ql,i))>=0){
+    out+=escapeHtml(text.slice(i,idx))+"<mark>"+escapeHtml(text.slice(idx,idx+q.length))+"</mark>";
+    i=idx+q.length;
+  }
+  return out+escapeHtml(text.slice(i));
+}
+function jumpTo(id,q){
+  closeSearch(); openNote(id);
+  setTimeout(()=>{
+    const walker=document.createTreeWalker(el.reader,NodeFilter.SHOW_TEXT);
+    const ql=q.toLowerCase();
+    while(walker.nextNode()){
+      const node=walker.currentNode;
+      const idx=node.nodeValue.toLowerCase().indexOf(ql);
+      if(idx>=0){
+        try{ const range=document.createRange();
+          range.setStart(node,idx); range.setEnd(node,idx+q.length);
+          const m=document.createElement("mark"); range.surroundContents(m);
+          m.scrollIntoView({block:"center",behavior:"smooth"});
+        }catch(e){}
+        break;
+      }
+    }
+  },80);
+}
+
+/* ================= popover: select + copy/open ================= */
+function selectNode(a){ try{ const r=document.createRange(); r.selectNodeContents(a);
+  const s=window.getSelection(); s.removeAllRanges(); s.addRange(r); }catch(e){} }
+function showPop(a,x,y){
+  selectNode(a);
+  const type=a.dataset.type, val=decodeURIComponent(a.dataset.val||"");
+  let openLabel=null,href=null;
+  if(type==="url"){ openLabel="Buka tautan"; href=val; }
+  else if(type==="email"){ openLabel="Kirim email"; href="mailto:"+val; }
+  else if(type==="phone"){ openLabel="Telepon"; href="tel:"+val.replace(/[^\d+]/g,""); }
+  el.pop.innerHTML="";
+  const c=document.createElement("button"); c.textContent="Salin";
+  c.onclick=()=>{ copyText(val); hidePop(); }; el.pop.appendChild(c);
+  if(openLabel){ const o=document.createElement("button"); o.textContent=openLabel;
+    o.onclick=()=>{ window.open(href,"_blank","noopener"); hidePop(); }; el.pop.appendChild(o); }
+  el.pop.classList.add("on");
+  const pw=el.pop.offsetWidth, ph=el.pop.offsetHeight;
+  let px=Math.min(x,innerWidth-pw-10), py=y+8;
+  if(py+ph>innerHeight-10) py=y-ph-8;
+  el.pop.style.left=Math.max(10,px)+"px"; el.pop.style.top=Math.max(10,py)+"px";
+}
+function hidePop(){ el.pop.classList.remove("on"); }
+let pressTimer=null,pressed=false;
+el.reader.addEventListener("touchstart",e=>{
+  const a=e.target.closest("a.det,a.chip"); if(!a) return;
+  pressed=false; const t=e.touches[0];
+  pressTimer=setTimeout(()=>{ pressed=true; showPop(a,t.clientX,t.clientY); },420);
+},{passive:true});
+el.reader.addEventListener("touchend",e=>{ clearTimeout(pressTimer); if(pressed) e.preventDefault(); },{passive:false});
+el.reader.addEventListener("touchmove",()=>clearTimeout(pressTimer),{passive:true});
+el.reader.addEventListener("click",e=>{
+  const a=e.target.closest("a.det,a.chip"); if(!a) return;
+  e.preventDefault(); const r=a.getBoundingClientRect(); showPop(a,r.left,r.bottom);
+});
+document.addEventListener("click",e=>{
+  if(el.pop.classList.contains("on")&&!el.pop.contains(e.target)&&!e.target.closest("a.det,a.chip")) hidePop();
+});
+
+/* ================= clipboard ================= */
+async function copyText(text){
+  let done=false;
+  try{ await navigator.clipboard.writeText(text); done=true; }
+  catch(e){
+    const ta=document.createElement("textarea"); ta.value=text;
+    ta.style.cssText="position:fixed;opacity:0"; document.body.appendChild(ta); ta.select();
+    try{ done=document.execCommand("copy"); }catch(_){}
+    ta.remove();
+  }
+  if(!done){ toast("Gagal menyalin"); return; }
+  toast("Tersalin — hilang dari clipboard dalam 45 detik");
+  setTimeout(async()=>{
+    try{
+      const cur=await navigator.clipboard.readText();
+      if(cur===text) await navigator.clipboard.writeText("");
+    }catch(e){}
+  },45000);
+}
+
+/* ================= lock / idle ================= */
+function lockNow(){
+  if(!locked||!cryptoKey) return;
+  persist().then(()=>{
+    cryptoKey=null; notes=[]; curId=null;
+    el.editor.innerHTML=""; el.reader.innerHTML="";
+    el.topbar.classList.add("hidden"); el.stage.classList.add("hidden");
+    closeDrawer(); closeSearch(); closeModal(); hidePop();
+    showGate("unlock");
+  });
+}
+el.lockNowBtn.onclick=()=>{ if(locked&&cryptoKey) lockNow(); else toast("Kunci sedang mati"); };
+["pointerdown","keydown","touchstart"].forEach(ev=>
+  document.addEventListener(ev,()=>{ lastActivity=Date.now(); },{passive:true}));
+setInterval(()=>{
+  if(!locked||!cryptoKey||!idleMin) return;
+  if(Date.now()-lastActivity>idleMin*60000) lockNow();
+},20000);
+el.idleRow.onclick=()=>{
+  const opts=[1,5,15,30,0];
+  idleMin=opts[(opts.indexOf(idleMin)+1)%opts.length];
+  Store.set("idle",String(idleMin));
+  renderDrawer(); toast(idleMin?`Kunci otomatis ${idleMin} menit`:"Kunci otomatis dimatikan");
+};
+el.lockToggleRow.onclick=()=>{
+  if(locked){
+    showModal({title:"Matikan kunci?",
+      desc:"Catatan disimpan tanpa enkripsi. Cadangan jadi bisa dibaca siapa pun. Token GitHub juga tersimpan polos.",
+      okText:"Matikan",danger:true,
+      onOk:async()=>{ locked=false; cryptoKey=null; await persist(); renderDrawer(); closeModal(); toast("Kunci dimatikan"); }});
+  }else{
+    showModal({title:"Aktifkan kunci",desc:"Buat kata sandi untuk mengenkripsi catatan.",
+      inputPh:"Kata sandi baru",inputType:"password",okText:"Aktifkan",
+      onOk:async v=>{ if(v.length<4) return "Minimal 4 karakter.";
+        saltBytes=crypto.getRandomValues(new Uint8Array(16));
+        cryptoKey=await deriveKey(v,saltBytes); locked=true;
+        await persist(); renderDrawer(); closeModal(); toast("Kunci aktif"); }});
+  }
+};
+el.changePw.onclick=()=>showModal({title:"Ganti kata sandi",
+  desc:"Semua catatan dienkripsi ulang dengan sandi baru.",
+  inputPh:"Kata sandi baru",inputType:"password",okText:"Ganti",
+  onOk:async v=>{ if(v.length<4) return "Minimal 4 karakter.";
+    saltBytes=crypto.getRandomValues(new Uint8Array(16));
+    cryptoKey=await deriveKey(v,saltBytes);
+    await persist(); closeModal(); toast("Kata sandi diganti"); }});
+
+/* ================= trash ================= */
+el.trashRow.onclick=()=>{
+  const items=trashNotes().sort((a,b)=>b.deleted-a.deleted);
+  const box=document.createElement("div");
+  if(!items.length){ box.innerHTML='<p style="margin:0">Tempat sampah kosong.</p>'; }
+  else{
+    const lb=document.createElement("div"); lb.className="listbox";
+    items.forEach(n=>{
+      const days=Math.max(0,30-Math.floor((Date.now()-n.deleted)/864e5));
+      const row=document.createElement("div"); row.className="listrow";
+      row.innerHTML=`<div class="lr-main"><div class="lr-name"></div>
+        <div class="lr-sub">sisa ${days} hari</div></div>
+        <button data-a="restore">Pulihkan</button>`;
+      row.querySelector(".lr-name").textContent=n.name;
+      row.querySelector("button").onclick=()=>{ n.deleted=null; n.modified=Date.now();
+        persist(); renderDrawer(); closeModal(); toast("Dipulihkan"); };
+      lb.appendChild(row);
+    });
+    box.appendChild(lb);
+  }
+  showModal({title:"Tempat sampah",desc:"Item dihapus permanen setelah 30 hari.",
+    node:box, okText:"Kosongkan sekarang", danger:true,
+    onOk:()=>{ notes=notes.filter(n=>!n.deleted); persist(); renderDrawer(); closeModal(); toast("Sampah dikosongkan"); }});
+};
+
+/* ================= export / import ================= */
+async function buildPayload(){
+  if(locked&&cryptoKey) return {v:2,enc:true,salt:b64e(saltBytes),blob:await encryptObj(cryptoKey,{notes,curId,gh})};
+  return {v:2,enc:false,notes,curId};
+}
+el.exportBtn.onclick=async()=>{
+  const payload=await buildPayload();
+  const blob=new Blob([JSON.stringify(payload)],{type:"application/json"});
+  const url=URL.createObjectURL(blob), a=document.createElement("a");
+  a.href=url; a.download=`catatan-${new Date().toISOString().slice(0,10)}.json`; a.click();
+  URL.revokeObjectURL(url); closeDrawer();
+  toast(locked?"Cadangan terenkripsi diunduh":"Cadangan (polos) diunduh");
+};
+el.importBtn.onclick=()=>el.fileInput.click();
+el.fileInput.onchange=async()=>{
+  const f=el.fileInput.files[0]; el.fileInput.value=""; if(!f) return;
+  try{ await applyPayload(JSON.parse(await f.text()),"File"); }
+  catch(e){ toast("File tidak valid"); }
+};
+async function applyPayload(data,src){
+  if(data.enc){
+    showModal({title:"Buka cadangan",desc:`${src} ini terenkripsi. Masukkan kata sandinya.`,
+      inputPh:"Kata sandi",inputType:"password",okText:"Pulihkan",
+      onOk:async v=>{
+        try{
+          const salt=b64d(data.salt), key=await deriveKey(v,salt);
+          const obj=await decryptObj(key,data.blob);
+          notes=obj.notes||[]; curId=obj.curId||null;
+          if(obj.gh) gh=Object.assign(gh,obj.gh);
+          saltBytes=salt; cryptoKey=key; locked=true;
+          await persist(); enterApp(); closeModal(); closeDrawer(); toast("Berhasil dipulihkan");
+        }catch(e){ return "Sandi salah atau data rusak."; }
+      }});
+  }else{
+    notes=data.notes||[]; curId=data.curId||null; locked=false; cryptoKey=null;
+    await persist(); enterApp(); closeDrawer(); toast("Berhasil dipulihkan (polos)");
+  }
+}
+
+/* ================= GitHub sync ================= */
+function ghHeaders(){ return {"Authorization":"Bearer "+gh.token,"Accept":"application/vnd.github+json",
+  "X-GitHub-Api-Version":"2022-11-28"}; }
+function ghReady(){ return gh.repo&&gh.token; }
+async function ghGetFile(ref){
+  const u=`https://api.github.com/repos/${gh.repo}/contents/${encodeURIComponent(gh.path)}`+(ref?`?ref=${ref}`:"");
+  const r=await fetch(u,{headers:ghHeaders()});
+  if(r.status===404) return null;
+  if(!r.ok) throw new Error(`GitHub ${r.status}`);
+  return r.json();
+}
+el.syncSetup.onclick=()=>{
+  showModal({title:"Atur GitHub",
+    desc:"Buat repo private, lalu buat token (Settings → Developer settings → Fine-grained token) dengan izin Contents: Read and write untuk repo itu.",
+    fields:[
+      {key:"repo",label:"Repo (pemilik/nama)",ph:"namamu/catatan-saya",val:gh.repo},
+      {key:"path",label:"Nama berkas",ph:"catatan.json",val:gh.path},
+      {key:"token",label:"Token",ph:"github_pat_…",val:gh.token,type:"password"}],
+    okText:"Simpan",
+    onOkFields:async v=>{
+      const repo=(v.repo||"").trim().replace(/^https?:\/\/github\.com\//,"").replace(/\.git$/,"");
+      if(!/^[\w.-]+\/[\w.-]+$/.test(repo)) return "Format repo: pemilik/nama";
+      if(!(v.token||"").trim()) return "Token tidak boleh kosong.";
+      gh.repo=repo; gh.path=(v.path||"catatan.json").trim(); gh.token=v.token.trim();
+      try{
+        const r=await fetch(`https://api.github.com/repos/${gh.repo}`,{headers:ghHeaders()});
+        if(!r.ok) return r.status===404?"Repo tidak ditemukan / token tak punya akses."
+          :(r.status===401?"Token ditolak.":"Gagal: "+r.status);
+      }catch(e){ return "Tidak bisa menghubungi GitHub (koneksi?)."; }
+      await persist(); renderDrawer(); closeModal(); toast("GitHub tersambung");
+    }});
+};
+el.syncPush.onclick=async()=>{
+  if(!ghReady()) return toast("Atur GitHub dulu");
+  toast("Mengirim…",4000);
+  try{
+    const remote=await ghGetFile(null);
+    if(remote&&gh.lastSha&&remote.sha!==gh.lastSha){
+      return showModal({title:"Versi GitHub lebih baru",
+        desc:"Ada perubahan di GitHub yang belum kamu tarik. Menimpa berarti perubahan itu hilang.",
+        okText:"Timpa saja",danger:true,
+        onOk:()=>{ closeModal(); doPush(remote.sha); }});
+    }
+    doPush(remote?remote.sha:null);
+  }catch(e){ toast("Gagal: "+e.message); }
+};
+async function doPush(sha){
+  try{
+    const payload=await buildPayload();
+    const body={message:`catatan ${new Date().toISOString()}`,content:strToB64(JSON.stringify(payload))};
+    if(sha) body.sha=sha;
+    const r=await fetch(`https://api.github.com/repos/${gh.repo}/contents/${encodeURIComponent(gh.path)}`,
+      {method:"PUT",headers:ghHeaders(),body:JSON.stringify(body)});
+    if(!r.ok) throw new Error(r.status);
+    const j=await r.json();
+    gh.lastSha=j.content.sha; gh.lastSync=Date.now();
+    await persist(); renderDrawer(); closeDrawer(); toast("Terkirim ke GitHub");
+  }catch(e){ toast("Gagal mengirim: "+e.message); }
+}
+el.syncPull.onclick=async()=>{
+  if(!ghReady()) return toast("Atur GitHub dulu");
+  toast("Menarik…",4000);
+  try{
+    const f=await ghGetFile(null);
+    if(!f) return toast("Belum ada berkas di GitHub");
+    const data=JSON.parse(b64ToStr(f.content));
+    gh.lastSha=f.sha;
+    if(data.enc&&cryptoKey&&saltBytes&&b64e(saltBytes)===data.salt){
+      try{
+        const obj=await decryptObj(cryptoKey,data.blob);
+        notes=obj.notes||[]; curId=obj.curId||null;
+        if(obj.gh){ const t=gh.token,r=gh.repo,p=gh.path; gh=Object.assign(gh,obj.gh); gh.token=t; gh.repo=r; gh.path=p; }
+        gh.lastSync=Date.now();
+        await persist(); enterApp(); closeDrawer(); toast("Data ditarik dari GitHub");
+        return;
+      }catch(e){}
+    }
+    await applyPayload(data,"Berkas GitHub");
+  }catch(e){ toast("Gagal menarik: "+e.message); }
+};
+el.syncHistory.onclick=async()=>{
+  if(!ghReady()) return toast("Atur GitHub dulu");
+  toast("Memuat riwayat…",4000);
+  try{
+    const r=await fetch(`https://api.github.com/repos/${gh.repo}/commits?path=${encodeURIComponent(gh.path)}&per_page=20`,
+      {headers:ghHeaders()});
+    if(!r.ok) throw new Error(r.status);
+    const commits=await r.json();
+    const box=document.createElement("div");
+    if(!commits.length) box.innerHTML='<p style="margin:0">Belum ada riwayat.</p>';
+    else{
+      const lb=document.createElement("div"); lb.className="listbox";
+      commits.forEach(c=>{
+        const d=new Date(c.commit.author.date);
+        const row=document.createElement("div"); row.className="listrow";
+        row.innerHTML=`<div class="lr-main"><div class="lr-name">${fmtTime(d.getTime())}</div>
+          <div class="lr-sub">${c.sha.slice(0,7)}</div></div><button>Lihat</button>`;
+        row.querySelector("button").onclick=async()=>{
+          try{
+            const f=await ghGetFile(c.sha);
+            const data=JSON.parse(b64ToStr(f.content));
+            closeModal();
+            showModal({title:"Pulihkan versi ini?",
+              desc:`Versi ${fmtTime(d.getTime())} akan menggantikan catatan di perangkat ini.`,
+              okText:"Pulihkan",danger:true,
+              onOk:async()=>{ closeModal(); await applyPayload(data,"Versi lama"); }});
+          }catch(e){ toast("Gagal memuat versi"); }
+        };
+        lb.appendChild(row);
+      });
+      box.appendChild(lb);
+    }
+    showModal({title:"Riwayat versi",desc:"20 penyimpanan terakhir di GitHub.",node:box,okText:"Tutup",onOk:closeModal});
+  }catch(e){ toast("Gagal: "+e.message); }
+};
+
+/* ================= theme ================= */
+function applyTheme(t){
+  document.documentElement.setAttribute("data-theme",t);
+  Store.set("theme",t);
+  document.querySelector('meta[name=theme-color]').setAttribute("content",t==="dark"?"#16181C":"#FBFAF8");
+  if(el.themeSub) el.themeSub.textContent=t==="dark"?"gelap":"terang";
+}
+el.themeRow.onclick=()=>applyTheme(document.documentElement.getAttribute("data-theme")==="dark"?"light":"dark");
+
+/* ================= modal ================= */
+function showModal(cfg){
+  el.modal.innerHTML="";
+  const h=document.createElement("h3"); h.textContent=cfg.title; el.modal.appendChild(h);
+  if(cfg.desc){ const p=document.createElement("p"); p.textContent=cfg.desc; el.modal.appendChild(p); }
+  if(cfg.node) el.modal.appendChild(cfg.node);
+  const inputs={};
+  if(cfg.fields){
+    cfg.fields.forEach(f=>{
+      const l=document.createElement("label"); l.textContent=f.label; el.modal.appendChild(l);
+      const i=document.createElement("input"); i.type=f.type||"text"; i.placeholder=f.ph||"";
+      i.value=f.val||""; i.autocomplete="off"; el.modal.appendChild(i); inputs[f.key]=i;
+    });
+  }
+  let single=null;
+  if(cfg.inputPh!==undefined){
+    single=document.createElement("input"); single.type=cfg.inputType||"text";
+    single.placeholder=cfg.inputPh; single.value=cfg.inputVal||""; single.autocomplete="off";
+    el.modal.appendChild(single);
+  }
+  const errEl=document.createElement("div"); errEl.className="merr"; el.modal.appendChild(errEl);
+  const row=document.createElement("div"); row.className="row";
+  const cancel=document.createElement("button"); cancel.className="mcancel"; cancel.textContent="Batal";
+  cancel.onclick=closeModal;
+  const ok=document.createElement("button"); ok.className="mok"+(cfg.danger?" danger":"");
+  ok.textContent=cfg.okText||"OK";
+  const run=async()=>{
+    errEl.textContent="";
+    let res;
+    if(cfg.onOkFields){ const v={}; for(const k in inputs) v[k]=inputs[k].value; res=await cfg.onOkFields(v); }
+    else if(cfg.onOk) res=await cfg.onOk(single?single.value:undefined);
+    if(typeof res==="string") errEl.textContent=res;
+  };
+  ok.onclick=run;
+  [single,...Object.values(inputs)].filter(Boolean).forEach(i=>
+    i.addEventListener("keydown",e=>{ if(e.key==="Enter") run(); }));
+  row.append(cancel,ok); el.modal.appendChild(row);
+  el.modalScrim.classList.add("on");
+  const first=single||Object.values(inputs)[0];
+  if(first) setTimeout(()=>first.focus(),60);
+}
+function closeModal(){ el.modalScrim.classList.remove("on"); el.modal.innerHTML=""; }
+el.modalScrim.addEventListener("click",e=>{ if(e.target===el.modalScrim) closeModal(); });
+
+/* ================= boot ================= */
+function enterApp(){
+  el.gate.classList.add("hidden");
+  el.topbar.classList.remove("hidden");
+  el.stage.classList.remove("hidden");
+  if(purgeOldTrash()) persist();
+  const list=sortedNotes();
+  if(!curId||!noteById(curId)||noteById(curId).deleted) curId=list.length?list[0].id:null;
+  if(curId) openNote(curId); else newNote("Catatan pertama");
+  renderDrawer();
+  lastActivity=Date.now();
+}
+function showGate(purpose){
+  el.gate.classList.remove("hidden");
+  el.gateErr.textContent=""; el.gatePw.value=""; el.gatePw2.value="";
+  if(purpose==="setup"){
+    el.gateTitle.textContent="Buat kata sandi";
+    el.gateDesc.textContent="Kata sandi ini mengunci semua catatanmu. Tidak dikirim ke mana pun — kalau lupa, catatan tidak bisa dibuka lagi.";
+    el.gatePw2wrap.classList.remove("hidden"); el.skipPw.classList.remove("hidden");
+    el.gateBtn.textContent="Kunci & mulai";
+  }else{
+    el.gateTitle.textContent="Buka catatan";
+    el.gateDesc.textContent="Masukkan kata sandi untuk membuka catatanmu.";
+    el.gatePw2wrap.classList.add("hidden"); el.skipPw.classList.add("hidden");
+    el.gateBtn.textContent="Buka";
+  }
+  el.gate.dataset.purpose=purpose;
+  setTimeout(()=>el.gatePw.focus(),60);
+}
+async function handleGate(){
+  const pw=el.gatePw.value;
+  if(el.gate.dataset.purpose==="setup"){
+    if(pw.length<4) return el.gateErr.textContent="Minimal 4 karakter.";
+    if(pw!==el.gatePw2.value) return el.gateErr.textContent="Kata sandi tidak sama.";
+    saltBytes=crypto.getRandomValues(new Uint8Array(16));
+    cryptoKey=await deriveKey(pw,saltBytes); locked=true;
+    notes=[]; curId=null; await persist(); enterApp();
+  }else{
+    try{
+      const blob=await Store.get("blob");
+      const key=await deriveKey(pw,saltBytes);
+      const obj=await decryptObj(key,blob);
+      cryptoKey=key; locked=true;
+      notes=obj.notes||[]; curId=obj.curId||null;
+      if(obj.gh) gh=Object.assign(gh,obj.gh);
+      enterApp();
+    }catch(e){
+      cryptoKey=null; el.gateErr.textContent="Kata sandi salah."; el.gatePw.value=""; el.gatePw.focus();
+    }
+  }
+}
+el.gateBtn.onclick=handleGate;
+el.gatePw.addEventListener("keydown",e=>{ if(e.key==="Enter"){
+  if(el.gate.dataset.purpose==="unlock") handleGate(); else el.gatePw2.focus(); }});
+el.gatePw2.addEventListener("keydown",e=>{ if(e.key==="Enter") handleGate(); });
+el.skipPw.onclick=async()=>{ locked=false; cryptoKey=null; notes=[]; curId=null; await persist(); enterApp(); };
+
+(async function boot(){
+  await Store.init();
+  // migrate from v1 localStorage
+  try{
+    const oldBlob=localStorage.getItem("cat.blob"), oldSalt=localStorage.getItem("cat.salt"),
+          oldPlain=localStorage.getItem("cat.plain");
+    if(!(await Store.get("blob"))&&!(await Store.get("plain"))){
+      if(oldBlob&&oldSalt){ await Store.set("blob",oldBlob); await Store.set("salt",oldSalt); await Store.set("lock","1"); }
+      else if(oldPlain){ await Store.set("plain",oldPlain); await Store.set("lock","0"); }
+    }
+  }catch(e){}
+
+  applyTheme(await Store.get("theme")||(matchMedia&&matchMedia("(prefers-color-scheme: dark)").matches?"dark":"light"));
+  const im=await Store.get("idle"); if(im!==null&&im!==undefined) idleMin=parseInt(im,10)||0;
+
+  const blob=await Store.get("blob"), saltStr=await Store.get("salt"), plain=await Store.get("plain");
+  if(blob&&saltStr){ saltBytes=b64d(saltStr); locked=true; showGate("unlock"); }
+  else if(plain){
+    try{ const o=JSON.parse(plain); notes=o.notes||[]; curId=o.curId||null; if(o.gh) gh=Object.assign(gh,o.gh); }
+    catch(e){ notes=[]; }
+    locked=false; enterApp();
+  }else showGate("setup");
+
+  if(!Store.usable) setTimeout(()=>toast("Penyimpanan browser terbatas di mode ini — sering-sering Ekspor",4000),1200);
+  if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+    navigator.serviceWorker.register("./sw.js").catch(()=>{});
+  }
+})();
+</script>
+</body>
+</html>

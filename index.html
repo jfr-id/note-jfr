@@ -195,6 +195,11 @@
     max-width:88vw;text-align:center}
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:82;display:none;
+    align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
+  .lightbox.on{display:flex}
+  .lightbox img{max-width:100%;max-height:100%;border-radius:6px;object-fit:contain}
+
   @media (min-width:760px){
     .drawer{max-width:310px}
     .paper,.meta{padding-left:max(18px,calc(50% - 380px));padding-right:max(18px,calc(50% - 380px))}
@@ -336,6 +341,7 @@
 <div class="modal-scrim" id="modalScrim"><div class="modal" id="modal"></div></div>
 <div class="pop" id="pop"></div>
 <div class="toast" id="toast"></div>
+<div class="lightbox" id="lightbox"><img id="lightboxImg" src="" alt=""></div>
 
 <script>
 "use strict";
@@ -425,7 +431,7 @@ const el={};
  "syncPush","syncPull","syncHistory","syncSetup","pushSub","setupSub",
  "lockToggleRow","lockSwitch","idleRow","idleSub","changePw",
  "trashRow","trashSub","exportBtn","exportSub","importBtn","themeRow","themeSub",
- "fileInput","imgInput","modalScrim","modal","pop","toast"].forEach(id=>el[id]=$("#"+id));
+ "fileInput","imgInput","modalScrim","modal","pop","toast","lightbox","lightboxImg"].forEach(id=>el[id]=$("#"+id));
 
 /* ================= util ================= */
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -490,6 +496,7 @@ function chipHtml(url,label){
 const RE_URL=/\b((?:https?:\/\/|www\.)[^\s<]+[^\s<.,;:!?)])/gi;
 const RE_MAIL=/\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g;
 const RE_NUM=/(^|[^\w+])(\+?\d[\d\s().-]{4,}\d)(?![\w])/g;
+const RE_REGCODE=/\b\d{2,}(?:\/[A-Za-z0-9-]+){2,}\b/g;
 function classifyNumber(raw){
   const s=raw.trim();
   if(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(s)) return null;   // tanggal 2024-05-12
@@ -511,6 +518,10 @@ function linkifyText(text){
     return hold(chipHtml(href,null));
   });
   out=out.replace(RE_MAIL,m=>hold(`<a class="det" data-type="email" data-val="${encodeURIComponent(m)}">${m}</a>`));
+  out=out.replace(RE_REGCODE,m=>{
+    if(!/[A-Za-z]/.test(m)) return m; // hindari menangkap tanggal murni angka seperti 2024/05/12
+    return hold(`<a class="det" data-type="number" data-val="${encodeURIComponent(m)}">${m}</a>`);
+  });
   out=out.replace(RE_NUM,(m,pre,num)=>{
     const kind=classifyNumber(num);
     if(!kind) return m;
@@ -841,9 +852,14 @@ el.reader.addEventListener("touchstart",e=>{
 el.reader.addEventListener("touchend",e=>{ clearTimeout(pressTimer); if(pressed) e.preventDefault(); },{passive:false});
 el.reader.addEventListener("touchmove",()=>clearTimeout(pressTimer),{passive:true});
 el.reader.addEventListener("click",e=>{
+  const img=e.target.closest("img");
+  if(img){ showLightbox(img.src); return; }
   const a=e.target.closest("a.det,a.chip"); if(!a) return;
   e.preventDefault(); const r=a.getBoundingClientRect(); showPop(a,r.left,r.bottom);
 });
+function showLightbox(src){ el.lightboxImg.src=src; el.lightbox.classList.add("on"); }
+function hideLightbox(){ el.lightbox.classList.remove("on"); el.lightboxImg.src=""; }
+el.lightbox.addEventListener("click",hideLightbox);
 document.addEventListener("click",e=>{
   if(el.pop.classList.contains("on")&&!el.pop.contains(e.target)&&!e.target.closest("a.det,a.chip")) hidePop();
 });

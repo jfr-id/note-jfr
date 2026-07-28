@@ -102,6 +102,7 @@
   .editor,.reader{font-size:16.5px;line-height:1.65}
   .editor{outline:none;min-height:60vh;caret-color:var(--accent)}
   .editor:empty:before{content:attr(data-ph);color:var(--muted)}
+  .editor p,.reader p{margin:0}
   .editor ol,.editor ul,.reader ol,.reader ul{padding-left:1.5em;margin:.4em 0}
   .editor li,.reader li{margin:.15em 0}
   .editor img,.reader img{max-width:100%;height:auto;border-radius:10px;margin:.5em 0;display:block}
@@ -194,6 +195,11 @@
     font-weight:500;z-index:90;opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
     max-width:88vw;text-align:center}
   .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:82;display:none;
+    align-items:center;justify-content:center;padding:24px;cursor:zoom-out}
+  .lightbox.on{display:flex}
+  .lightbox img{max-width:100%;max-height:100%;border-radius:6px;object-fit:contain}
 
   @media (min-width:760px){
     .drawer{max-width:310px}
@@ -336,6 +342,7 @@
 <div class="modal-scrim" id="modalScrim"><div class="modal" id="modal"></div></div>
 <div class="pop" id="pop"></div>
 <div class="toast" id="toast"></div>
+<div class="lightbox" id="lightbox"><img id="lightboxImg" src="" alt=""></div>
 
 <script>
 "use strict";
@@ -425,7 +432,7 @@ const el={};
  "syncPush","syncPull","syncHistory","syncSetup","pushSub","setupSub",
  "lockToggleRow","lockSwitch","idleRow","idleSub","changePw",
  "trashRow","trashSub","exportBtn","exportSub","importBtn","themeRow","themeSub",
- "fileInput","imgInput","modalScrim","modal","pop","toast"].forEach(id=>el[id]=$("#"+id));
+ "fileInput","imgInput","modalScrim","modal","pop","toast","lightbox","lightboxImg"].forEach(id=>el[id]=$("#"+id));
 
 /* ================= util ================= */
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -490,6 +497,7 @@ function chipHtml(url,label){
 const RE_URL=/\b((?:https?:\/\/|www\.)[^\s<]+[^\s<.,;:!?)])/gi;
 const RE_MAIL=/\b([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})\b/g;
 const RE_NUM=/(^|[^\w+])(\+?\d[\d\s().-]{4,}\d)(?![\w])/g;
+const RE_REGCODE=/\b\d{2,}(?:\/[A-Za-z0-9-]+){2,}\b/g;
 function classifyNumber(raw){
   const s=raw.trim();
   if(/^\d{4}[-/]\d{1,2}[-/]\d{1,2}$/.test(s)) return null;   // tanggal 2024-05-12
@@ -511,6 +519,10 @@ function linkifyText(text){
     return hold(chipHtml(href,null));
   });
   out=out.replace(RE_MAIL,m=>hold(`<a class="det" data-type="email" data-val="${encodeURIComponent(m)}">${m}</a>`));
+  out=out.replace(RE_REGCODE,m=>{
+    if(!/[A-Za-z]/.test(m)) return m; // hindari menangkap tanggal murni angka seperti 2024/05/12
+    return hold(`<a class="det" data-type="number" data-val="${encodeURIComponent(m)}">${m}</a>`);
+  });
   out=out.replace(RE_NUM,(m,pre,num)=>{
     const kind=classifyNumber(num);
     if(!kind) return m;
@@ -841,9 +853,14 @@ el.reader.addEventListener("touchstart",e=>{
 el.reader.addEventListener("touchend",e=>{ clearTimeout(pressTimer); if(pressed) e.preventDefault(); },{passive:false});
 el.reader.addEventListener("touchmove",()=>clearTimeout(pressTimer),{passive:true});
 el.reader.addEventListener("click",e=>{
+  const img=e.target.closest("img");
+  if(img){ showLightbox(img.src); return; }
   const a=e.target.closest("a.det,a.chip"); if(!a) return;
   e.preventDefault(); const r=a.getBoundingClientRect(); showPop(a,r.left,r.bottom);
 });
+function showLightbox(src){ el.lightboxImg.src=src; el.lightbox.classList.add("on"); }
+function hideLightbox(){ el.lightbox.classList.remove("on"); el.lightboxImg.src=""; }
+el.lightbox.addEventListener("click",hideLightbox);
 document.addEventListener("click",e=>{
   if(el.pop.classList.contains("on")&&!el.pop.contains(e.target)&&!e.target.closest("a.det,a.chip")) hidePop();
 });
@@ -884,6 +901,7 @@ el.lockNowBtn.onclick=()=>{ if(locked&&cryptoKey) lockNow(); else toast("Kunci s
   document.addEventListener(ev,()=>{ lastActivity=Date.now(); },{passive:true}));
 setInterval(()=>{
   if(!locked||!cryptoKey||!idleMin) return;
+  if(el.modalScrim.classList.contains("on")) return; // jangan kunci selagi ada modal terbuka
   if(Date.now()-lastActivity>idleMin*60000) lockNow();
 },20000);
 el.idleRow.onclick=()=>{
@@ -1025,7 +1043,7 @@ el.syncPush.onclick=async()=>{
     doPush(remote?remote.sha:null);
   }catch(e){ toast("Gagal: "+e.message); }
 };
-async function doPush(sha){
+async function doPush(sha,silent){
   try{
     const payload=await buildPayload();
     const body={message:`catatan ${new Date().toISOString()}`,content:strToB64(JSON.stringify(payload))};
@@ -1035,22 +1053,23 @@ async function doPush(sha){
     if(!r.ok) throw new Error(r.status);
     const j=await r.json();
     gh.lastSha=j.content.sha; gh.lastSync=Date.now();
-    await persist(); setGhDirty(false); renderDrawer(); closeDrawer(); toast("Terkirim ke GitHub");
-  }catch(e){ toast("Gagal mengirim: "+e.message); }
+    await persist(); setGhDirty(false); renderDrawer(); closeDrawer();
+    if(!silent) toast("Terkirim ke GitHub");
+  }catch(e){ if(!silent) toast("Gagal mengirim: "+e.message); }
 }
 let autoPushBusy=false;
-async function autoPushIfNeeded(){
+async function autoPushIfNeeded(silent){
   if(!ghReady()||!ghDirty||autoPushBusy) return;
   autoPushBusy=true;
   try{
     const remote=await ghGetFile(null);
     if(remote&&gh.lastSha&&remote.sha!==gh.lastSha) return; // ada versi lain, biarkan diselesaikan manual
-    await doPush(remote?remote.sha:null);
+    await doPush(remote?remote.sha:null,silent);
   }catch(e){ /* diam — akan dicoba lagi di kesempatan berikutnya */ }
   finally{ autoPushBusy=false; }
 }
 document.addEventListener("visibilitychange",()=>{
-  if(document.visibilityState==="hidden") autoPushIfNeeded();
+  if(document.visibilityState==="hidden") autoPushIfNeeded(true);
 });
 el.syncPull.onclick=async()=>{
   if(!ghReady()) return toast("Atur GitHub dulu");

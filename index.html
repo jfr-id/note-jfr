@@ -901,6 +901,7 @@ el.lockNowBtn.onclick=()=>{ if(locked&&cryptoKey) lockNow(); else toast("Kunci s
   document.addEventListener(ev,()=>{ lastActivity=Date.now(); },{passive:true}));
 setInterval(()=>{
   if(!locked||!cryptoKey||!idleMin) return;
+  if(el.modalScrim.classList.contains("on")) return; // jangan kunci selagi ada modal terbuka
   if(Date.now()-lastActivity>idleMin*60000) lockNow();
 },20000);
 el.idleRow.onclick=()=>{
@@ -1042,7 +1043,7 @@ el.syncPush.onclick=async()=>{
     doPush(remote?remote.sha:null);
   }catch(e){ toast("Gagal: "+e.message); }
 };
-async function doPush(sha){
+async function doPush(sha,silent){
   try{
     const payload=await buildPayload();
     const body={message:`catatan ${new Date().toISOString()}`,content:strToB64(JSON.stringify(payload))};
@@ -1052,22 +1053,23 @@ async function doPush(sha){
     if(!r.ok) throw new Error(r.status);
     const j=await r.json();
     gh.lastSha=j.content.sha; gh.lastSync=Date.now();
-    await persist(); setGhDirty(false); renderDrawer(); closeDrawer(); toast("Terkirim ke GitHub");
-  }catch(e){ toast("Gagal mengirim: "+e.message); }
+    await persist(); setGhDirty(false); renderDrawer(); closeDrawer();
+    if(!silent) toast("Terkirim ke GitHub");
+  }catch(e){ if(!silent) toast("Gagal mengirim: "+e.message); }
 }
 let autoPushBusy=false;
-async function autoPushIfNeeded(){
+async function autoPushIfNeeded(silent){
   if(!ghReady()||!ghDirty||autoPushBusy) return;
   autoPushBusy=true;
   try{
     const remote=await ghGetFile(null);
     if(remote&&gh.lastSha&&remote.sha!==gh.lastSha) return; // ada versi lain, biarkan diselesaikan manual
-    await doPush(remote?remote.sha:null);
+    await doPush(remote?remote.sha:null,silent);
   }catch(e){ /* diam — akan dicoba lagi di kesempatan berikutnya */ }
   finally{ autoPushBusy=false; }
 }
 document.addEventListener("visibilitychange",()=>{
-  if(document.visibilityState==="hidden") autoPushIfNeeded();
+  if(document.visibilityState==="hidden") autoPushIfNeeded(true);
 });
 el.syncPull.onclick=async()=>{
   if(!ghReady()) return toast("Atur GitHub dulu");
